@@ -1,0 +1,29 @@
+version: 1
+env:
+  variables:
+      ORIGIN: https://${AWS_BRANCH//\//-}.${AWS_APP_ID}.amplifyapp.com
+      STACKNAME: amplify-aws-serverless-shopping-cart
+backend:
+  phases:
+    preBuild:
+      commands:
+        - curl "https://github.com/aws/aws-sam-cli/releases/latest/download/aws-sam-cli-linux-x86_64.zip" -L -o "aws-sam-cli.zip"
+        - unzip aws-sam-cli.zip -d sam-installation
+        - ./sam-installation/install
+        - pip3 install -U boto3
+    build:
+      commands:
+        - make backend
+frontend:
+  phases:
+    # IMPORTANT - Please verify your build commands
+    build:
+      commands:
+        - make frontend-build
+  artifacts:
+    # IMPORTANT - Please verify your build output directory
+    baseDirectory: /frontend/dist
+    files:
+      - '**/*'
+  cache:
+    paths: []

@@ -1,0 +1,36 @@
+name: tests
+
+on:
+  pull_request:
+    branches:
+      - main
+  push:
+    branches:
+      - main
+
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v1
+      - name: setup python-3.8
+        uses: actions/setup-python@v1
+        with:
+          python-version: 3.8
+      - name: setup node-12.x
+        uses: actions/setup-node@v1
+        with:
+          node-version: 12
+      - name: install dependencies
+        shell: bash
+        run: |
+          sudo apt-get install -y jq
+          python -m pip install --upgrade pip
+          make requirements npm-install
+          mkdir ~/.aws
+          touch ~/.aws/credentials ~/.aws/config
+          ls ~/.aws/
+      - name: lint and unit tests
+        shell: bash
+        run: |
+          make ci

@@ -1,0 +1,196 @@
+#!/usr/bin/env python3
+
+
+import argparse
+import copy
+import os
+import subprocess
+from typing import Dict, List, Optional
+import yaml
+
+
+ROOT = os.environ.get("ROOT", os.getcwd())
+
+
+# If any file in these folders are changed, rebuild all services
+REBUILD_FOLDERS = [
+    "shared"
+]
+
+
+# If any file in these service folders are changed, ignore it.
+# If the folder does not have a `metadata.yaml` file, the folder is ignored
+# anyway.
+IGNORE_FOLDERS = []
+
+
+def get_args():
+    """
+    Retrieve arguments from the commandline
+    """
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--env-only", default=False, action="store_true")
+    parser.add_argument("--graph", default=False, action="store_true")
+    parser.add_argument("--reverse", default=False, action="store_true")
+    parser.add_argument("--exclude", action="append")
+    parser.add_argument("--deps-of", action="append")
+    parser.add_argument("--changed-since", default="0")
+
+    return parser.parse_args()
+
+
+def get_metadata(service_name: str) -> dict:
+    """
+    Get metadata for a service
+    """
+
+    metafile = os.path.join(ROOT, service_name, "metadata.yaml")
+    if not os.path.isfile(metafile):
+        raise ValueError("Metadata file not found for {}".format(service_name))
+
+    with open(metafile) as fp:
+        metadata = yaml.load(fp, Loader=yaml.SafeLoader)
+
+    return metadata
+
+
+def get_services(
+        env_only: bool = False,
+        deps_of: Optional[List[str]] = None,
+        exclude: Optional[List[str]] = None
+    ) -> Dict[str, dict]:
+    """
+    Return the list of services
+
+    env_only: only return services that support environments (after parsing dependencies)
+    deps_of: only return services that are a dependency of another service (including itself)
+    exclude: exclude these services from the list (after parsing dependencies)
+    """
+
+    # Gather all services
+    if deps_of is None:
+        services = {
+            # Mapping name: reverse dependencies
+            name: {"deps": [], "rdeps": [], "metadata": get_metadata(name)}
+            for name in os.listdir(ROOT)
+            if os.path.isfile(os.path.join(ROOT, name, "metadata.yaml"))
+        }
+    else:
+        services = {}
+        to_scan = deps_of
+        while len(to_scan) > 0:
+            name = to_scan.pop(0)
+            services[name] = {"deps": [], "rdeps": [], "metadata": get_metadata(name)}
+            for dependency in services[name]["metadata"].get("dependencies", []):
+                if dependency not in services and dependency not in to_scan:
+                    to_scan.append(dependency)
+
+    # If needed, remove services which don't support environments
+    if env_only:
+        for name in list(services.keys()):
+            if not services[name]["metadata"].get("flags", {}).get("environment", True):
+                del services[name]
+
+    # Filter out excluded names
+    return {k: v for k, v in services.items() if k not in IGNORE_FOLDERS + (exclude or [])}
+
+
+def make_service_graph(
+        services: Dict[str, dict],
+        changed_since: str = "0"
+    ) -> List[str]:
+    """
+    Retrieve services in dependency order
+    """
+
+    to_scan = []
+
+    # Parse dependencies
+    for name in services.keys():
+        if len(services[name]["metadata"].get("dependencies", [])) == 0:
+            to_scan.append(name)
+        for dep in services[name]["metadata"].get("dependencies", []):
+            if name == dep:
+                continue
+            # This service depends on all the services
+            elif dep == "*":
+                for dname in services.keys():
+                    # Only inject if this is not the same service
+                    if dname != name:
+                        services[name]["deps"].append(dname)
+                        services[dname]["rdeps"].append(name)
+            elif dep not in services:
+                raise ValueError("Dependency {} of {} not found".format(dep, name))
+            else:
+                services[name]["deps"].append(dep)
+                # Inject as a reverse dependency
+                services[dep]["rdeps"].append(name)
+
+    # Scan all services until there are no more services to scan.
+    count = 0
+    retval = []
+    while len(to_scan) > 0:
+        retval_line = copy.deepcopy(to_scan)
+        to_scan = []
+        for name in retval_line:
+            for rname in services[name]["rdeps"]:
+                services[rname]["deps"].remove(name)
+                if len(services[rname]["deps"]) == 0:
+                    to_scan.append(rname)
+        count += len(retval_line)
+        retval.append(retval_line)
+
+
+    # If there is a discrepancy, this means that there is a circular
+    # dependency.
+    if count != len(services):
+        for key, value in services.items():
+            print(key, value)
+        raise ValueError("Potential circular dependency found: mismatch between number of services: {} vs {}".format(len(retval), len(services)))
+
+    # If `--changed-since` is absent or does not have a valid commit ID, return the list of services
+    if changed_since == "0":
+        return retval
+
+    # If `--changed-since` has a valid commit ID, we need to check which 
+    process = subprocess.run(["git", "diff", changed_since, "--name-only"], capture_output=True, text=True)
+    process.check_returncode()
+
+    changed = []
+    for filename in process.stdout.split("\n"):
+        basename = filename.split("/", 1)[0]
+
+        # If one file from the special folders has changed, all services need
+        # to be rebuilt.
+        if basename in REBUILD_FOLDERS:
+            return retval
+
+        if basename in services:
+            changed.append(basename)
+
+    updated_services = copy.deepcopy(retval)
+    for index, service_line in enumerate(retval):
+        for service in service_line:
+            if service not in changed:
+                updated_services[index].remove(service)
+
+    # Only return each service once
+    return [service_line for service_line in updated_services if service_line]
+
+
+if __name__ == "__main__":
+    args = get_args()
+    services = make_service_graph(
+        get_services(args.env_only, args.deps_of, args.exclude),
+        args.changed_since
+    )
+    if args.reverse:
+        services = services[::-1]
+
+    for service_line in services:
+        if args.graph:
+            print(",".join(service_line))
+        else:
+            for service in service_line:
+                print(service)

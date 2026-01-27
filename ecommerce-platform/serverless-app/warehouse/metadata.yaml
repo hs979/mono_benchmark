@@ -1,0 +1,7 @@
+name: warehouse
+dependencies:
+  - platform
+  - users
+parameters:
+  EventBusArn: /ecommerce/{Environment}/platform/event-bus/arn
+  EventBusName: /ecommerce/{Environment}/platform/event-bus/name

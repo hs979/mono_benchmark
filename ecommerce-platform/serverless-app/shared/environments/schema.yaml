@@ -1,0 +1,31 @@
+type: object
+description: Environments file
+
+additionalProperties:
+  type: object
+  description: Represents a single environment
+  properties:
+    parameters:
+      type: object
+      description: |
+        CloudFormation Parameters and their values for a specific environment.
+      additionalProperties:
+        type: string
+    tags:
+      type: object
+      description: |
+        Tags for CloudFormation Template Configuration file
+      additionalProperties:
+        type: string
+    flags:
+      type: object
+      properties:
+        can-tests-integ:
+          type: boolean
+          default: true
+        can-tests-e2e:
+          type: boolean
+          default: true
+        is-prod:
+          type: boolean
+          default: false

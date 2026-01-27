@@ -1,0 +1,225 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  文件处理 Serverless 应用
+  
+  将 Markdown 文件转换为 HTML 并进行情感分析的 Serverless 应用架构
+
+Globals:
+  Function:
+    Timeout: 300
+    MemorySize: 512
+    Runtime: python3.9
+    Environment:
+      Variables:
+        DYNAMODB_TABLE_NAME: !Ref SentimentTable
+        AWS_REGION: !Ref AWS::Region
+
+Parameters:
+  InputBucketName:
+    Type: String
+    Default: fileprocessing-input-bucket
+    Description: S3 存储桶名称（用于上传 Markdown 文件）
+  
+  OutputBucketName:
+    Type: String
+    Default: fileprocessing-output-bucket
+    Description: S3 存储桶名称（用于存储生成的 HTML 文件）
+
+Resources:
+  # S3 存储桶 - 输入文件
+  InputBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub '${InputBucketName}-${AWS::AccountId}'
+      NotificationConfiguration:
+        LambdaConfigurations:
+          - Event: s3:ObjectCreated:*
+            Function: !GetAtt ProcessFileFunction.Arn
+            Filter:
+              S3Key:
+                Rules:
+                  - Name: suffix
+                    Value: .md
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+      VersioningConfiguration:
+        Status: Enabled
+      Tags:
+        - Key: Application
+          Value: FileProcessing
+        - Key: Environment
+          Value: Production
+
+  # S3 存储桶 - 输出文件
+  OutputBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub '${OutputBucketName}-${AWS::AccountId}'
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+      VersioningConfiguration:
+        Status: Enabled
+      Tags:
+        - Key: Application
+          Value: FileProcessing
+        - Key: Environment
+          Value: Production
+
+  # Lambda 函数 - 文件处理
+  ProcessFileFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: FileProcessing-ProcessFile
+      CodeUri: src/process_file/
+      Handler: app.lambda_handler
+      Description: 处理 Markdown 文件，转换为 HTML 并进行情感分析
+      Environment:
+        Variables:
+          OUTPUT_BUCKET: !Ref OutputBucket
+      Policies:
+        - S3ReadPolicy:
+            BucketName: !Sub '${InputBucketName}-${AWS::AccountId}'
+        - S3CrudPolicy:
+            BucketName: !Sub '${OutputBucketName}-${AWS::AccountId}'
+        - DynamoDBCrudPolicy:
+            TableName: !Ref SentimentTable
+        - Statement:
+            - Effect: Allow
+              Action:
+                - comprehend:DetectSentiment
+              Resource: '*'
+      Tags:
+        Application: FileProcessing
+
+  # Lambda 权限 - 允许 S3 触发
+  ProcessFileFunctionPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref ProcessFileFunction
+      Action: lambda:InvokeFunction
+      Principal: s3.amazonaws.com
+      SourceArn: !Sub 'arn:aws:s3:::${InputBucketName}-${AWS::AccountId}'
+
+  # DynamoDB 表 - 存储情感分析结果
+  SentimentTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: ref-arch-fileprocessing-sentiment
+      AttributeDefinitions:
+        - AttributeName: filename
+          AttributeType: S
+      KeySchema:
+        - AttributeName: filename
+          KeyType: HASH
+      BillingMode: PAY_PER_REQUEST
+      Tags:
+        - Key: Application
+          Value: FileProcessing
+        - Key: Environment
+          Value: Production
+
+  # API Gateway - 文件上传接口
+  FileUploadApi:
+    Type: AWS::Serverless::Api
+    Properties:
+      Name: FileProcessing-API
+      StageName: prod
+      Description: API for file upload
+      Cors:
+        AllowMethods: "'POST, GET, OPTIONS'"
+        AllowHeaders: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
+        AllowOrigin: "'*'"
+      Tags:
+        Application: FileProcessing
+
+  # Lambda 函数 - 文件上传
+  UploadFileFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: FileProcessing-UploadFile
+      CodeUri: src/upload_file/
+      Handler: app.lambda_handler
+      Description: 处理文件上传请求，将文件保存到 S3
+      Environment:
+        Variables:
+          INPUT_BUCKET: !Ref InputBucket
+      Policies:
+        - S3CrudPolicy:
+            BucketName: !Sub '${InputBucketName}-${AWS::AccountId}'
+      Events:
+        UploadFile:
+          Type: Api
+          Properties:
+            RestApiId: !Ref FileUploadApi
+            Path: /upload
+            Method: POST
+      Tags:
+        Application: FileProcessing
+
+  # Lambda 函数 - 获取处理结果
+  GetResultFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: FileProcessing-GetResult
+      CodeUri: src/get_result/
+      Handler: app.lambda_handler
+      Description: 从 DynamoDB 获取情感分析结果
+      Policies:
+        - DynamoDBReadPolicy:
+            TableName: !Ref SentimentTable
+      Events:
+        GetResult:
+          Type: Api
+          Properties:
+            RestApiId: !Ref FileUploadApi
+            Path: /result/{filename}
+            Method: GET
+      Tags:
+        Application: FileProcessing
+
+Outputs:
+  InputBucketName:
+    Description: S3 输入存储桶名称
+    Value: !Ref InputBucket
+    Export:
+      Name: !Sub '${AWS::StackName}-InputBucket'
+
+  OutputBucketName:
+    Description: S3 输出存储桶名称
+    Value: !Ref OutputBucket
+    Export:
+      Name: !Sub '${AWS::StackName}-OutputBucket'
+
+  SentimentTableName:
+    Description: DynamoDB 表名称
+    Value: !Ref SentimentTable
+    Export:
+      Name: !Sub '${AWS::StackName}-SentimentTable'
+
+  ProcessFileFunctionArn:
+    Description: 文件处理 Lambda 函数 ARN
+    Value: !GetAtt ProcessFileFunction.Arn
+    Export:
+      Name: !Sub '${AWS::StackName}-ProcessFileFunction'
+
+  ApiEndpoint:
+    Description: API Gateway 端点 URL
+    Value: !Sub 'https://${FileUploadApi}.execute-api.${AWS::Region}.amazonaws.com/prod'
+    Export:
+      Name: !Sub '${AWS::StackName}-ApiEndpoint'
+
+  UploadFileUrl:
+    Description: 文件上传 API URL
+    Value: !Sub 'https://${FileUploadApi}.execute-api.${AWS::Region}.amazonaws.com/prod/upload'
+
+  GetResultUrl:
+    Description: 获取结果 API URL
+    Value: !Sub 'https://${FileUploadApi}.execute-api.${AWS::Region}.amazonaws.com/prod/result/{filename}'
+

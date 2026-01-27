@@ -1,0 +1,3 @@
+boto3~=1.11
+botocore~=1.13
+../shared/lambda_python_powertools/

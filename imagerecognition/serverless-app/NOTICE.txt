@@ -1,0 +1,10 @@
+AWS Serverless Reference Architecture: Image Recognition and Processing Backend
+Copyright 2017 Amazon Web Services, Inc. or its affiliates. All Rights Reserved.
+
+**********************
+THIRD PARTY COMPONENTS
+**********************
+The web app used React (https://reactjs.org/) which is under the MIT license.
+
+
+The licenses for these third party components are included in LICENSE

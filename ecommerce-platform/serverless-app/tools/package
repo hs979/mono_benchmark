@@ -1,0 +1,78 @@
+#!/bin/bash
+
+set -e
+
+ROOT=${ROOT:-$(pwd)}
+TYPE=$1
+SERVICE=$2
+
+service_dir=$ROOT/$SERVICE
+build_dir=$service_dir/build
+
+display_usage () {
+    echo "Usage: $0 TYPE SERVICE"
+}
+
+# Check if there are at least 2 arguments
+if [ $# -lt 2 ]; then
+    display_usage
+    exit 1
+fi
+
+# Check if the service exists
+if [ ! -f $service_dir/metadata.yaml ]; then
+    echo "Service $SERVICE does not exist"
+    exit 1
+fi
+
+# Check for quiet mode
+if [ ! -z $QUIET ]; then
+    export OUTPUT_FILE=$(mktemp)
+    exec 5>&1 6>&2 1>$OUTPUT_FILE 2>&1
+fi
+
+cleanup () {
+    CODE=$?
+    if [ ! -z $QUIET ]; then
+        if [ ! $CODE -eq 0 ]; then
+            cat $OUTPUT_FILE >&5
+        fi
+        rm $OUTPUT_FILE
+    fi
+}
+trap cleanup EXIT
+
+package_cloudformation () {
+    if [ -f $service_dir/build/template.yaml ]; then
+        # Construct the S3 Bucket name
+        aws_region=$(python3 -c 'import boto3; print(boto3.Session().region_name)')
+        aws_account_id=$(aws sts get-caller-identity | jq .Account -r)
+        s3_bucket="ecommerce-artifacts-${aws_account_id}-${aws_region}"
+        # Create the S3 bucket if it doesn't exist
+        aws s3api head-bucket --bucket $s3_bucket || {
+            aws s3 mb s3://$s3_bucket --region ${aws_region}
+        }
+
+        pushd $build_dir
+        aws cloudformation package \
+            --s3-bucket $s3_bucket \
+            --s3-prefix "artifacts" \
+            --template-file template.yaml \
+            --output-template-file template.out || {
+                # Delay failure so we can popd
+                FAILED=yes
+            }
+        popd
+        if [ ! -z $FAILED ]; then
+            exit 1
+        fi
+    fi
+}
+
+type package_$TYPE | grep -q "function" &>/dev/null || {
+    echo "Unsupported type: $TYPE"
+    echo
+    display_usage
+    exit 1
+}
+package_$TYPE

@@ -1,0 +1,60 @@
+# AWS DynamoDB 配置示例
+# 
+# 使用方法：
+# 1. 复制此文件为 .env 或直接在 PowerShell 中设置环境变量
+# 2. 填入您的 AWS 凭证
+
+# ========================================
+# AWS 凭证配置（必需）
+# ========================================
+# 从 AWS IAM 控制台获取您的访问密钥
+AWS_ACCESS_KEY_ID=your-aws-access-key-id
+AWS_SECRET_ACCESS_KEY=your-aws-secret-access-key
+AWS_REGION=us-east-1
+
+# ========================================
+# DynamoDB 端点配置（可选）
+# ========================================
+# 留空或不设置：使用真实的 AWS DynamoDB（推荐）
+# 设置为 http://localhost:4566：使用 LocalStack 本地开发
+DYNAMODB_ENDPOINT_URL=
+
+# ========================================
+# DynamoDB 表名配置（可选）
+# ========================================
+# 如果不设置，将使用以下默认值
+TABLE_USERS_NAME=ecommerce-users
+TABLE_PRODUCTS_NAME=ecommerce-products
+TABLE_ORDERS_NAME=ecommerce-orders
+TABLE_PAYMENT_NAME=ecommerce-payment
+TABLE_DELIVERY_NAME=ecommerce-delivery
+TABLE_WAREHOUSE_NAME=ecommerce-warehouse
+TABLE_PAYMENT_3P_NAME=ecommerce-payment-3p
+
+# ========================================
+# Flask 安全配置（生产环境必须修改）
+# ========================================
+SECRET_KEY=your-secret-key-change-this
+JWT_SECRET_KEY=your-jwt-secret-key-change-this
+
+# ========================================
+# 其他配置
+# ========================================
+LOG_LEVEL=INFO
+CORS_ORIGINS=*
+
+
+# ========================================
+# PowerShell 环境变量设置示例
+# ========================================
+# 在 PowerShell 中运行：
+#
+# $env:AWS_ACCESS_KEY_ID="your-access-key"
+# $env:AWS_SECRET_ACCESS_KEY="your-secret-key"
+# $env:AWS_REGION="us-east-1"
+# $env:DYNAMODB_ENDPOINT_URL=""
+#
+# 然后运行：
+# python init_dynamodb.py --with-samples
+# python run.py
+

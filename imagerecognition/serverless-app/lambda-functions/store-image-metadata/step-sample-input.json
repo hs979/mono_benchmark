@@ -1,0 +1,90 @@
+{
+  "s3Bucket": "photo-sharee7fa5f1b25be4c63a81417becda53512master-master",
+  "s3Key": "private/us-east-1:4f182a97-9165-46d8-a6de-f29b16927761/uploads/1d0e9d92-b444-4ed2-a4e8-e1ee6071bf2a.png",
+  "objectID": "private/us-east-1:4f182a97-9165-46d8-a6de-f29b16927761/uploads/1d0e9d92-b444-4ed2-a4e8-e1ee6071bf2a.png",
+  "extractedMetadata": {
+    "creationTime": "2016:07:06 09:48:21",
+    "geo": {
+      "latitude": {
+        "D": 33,
+        "M": 53,
+        "S": 52.41,
+        "Direction": "N"
+      },
+      "longitude": {
+        "D": 118,
+        "M": 25,
+        "S": 7.25,
+        "Direction": "W"
+      }
+    },
+    "exifMake": "LGE",
+    "exifModel": "Nexus 5X",
+    "dimensions": {
+      "width": 1402,
+      "height": 783
+    },
+    "fileSize": "88504B",
+    "format": "PNG"
+  },
+  "parallelResults": [
+    [
+      {
+        "Name": "Word",
+        "Confidence": 96.80172729492188,
+        "Instances": [],
+        "Parents": []
+      },
+      {
+        "Name": "Text",
+        "Confidence": 96.48905944824219,
+        "Instances": [],
+        "Parents": []
+      },
+      {
+        "Name": "File",
+        "Confidence": 77.9222183227539,
+        "Instances": [],
+        "Parents": []
+      },
+      {
+        "Name": "Scoreboard",
+        "Confidence": 74.76708984375,
+        "Instances": [
+          {
+            "BoundingBox": {
+              "Width": 0.9764256477355957,
+              "Height": 0.8571417331695557,
+              "Left": 0.014487230218946934,
+              "Top": 0.06307414174079895
+            },
+            "Confidence": 74.76708984375
+          }
+        ],
+        "Parents": []
+      },
+      {
+        "Name": "Webpage",
+        "Confidence": 70.3815689086914,
+        "Instances": [],
+        "Parents": [
+          {
+            "Name": "File"
+          }
+        ]
+      },
+      {
+        "Name": "Symbol",
+        "Confidence": 64.35458374023438,
+        "Instances": [],
+        "Parents": []
+      }
+    ],
+    {
+      "width": 250,
+      "height": 139.62196861626248,
+      "s3key": "resized/private/us-east-1:4f182a97-9165-46d8-a6de-f29b16927761/uploads/1d0e9d92-b444-4ed2-a4e8-e1ee6071bf2a.png",
+      "s3Bucket": "photo-sharee7fa5f1b25be4c63a81417becda53512master-master"
+    }
+  ]
+}

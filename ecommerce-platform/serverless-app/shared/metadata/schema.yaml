@@ -1,0 +1,65 @@
+type: object
+description: Metadata file
+
+additionalProperties: false
+required:
+  - name
+properties:
+  name:
+    description: Service name
+    type: string
+
+  permissions:
+    type: array
+    items:
+      type: object
+      additionalProperties: false
+      required:
+        - service
+      properties:
+        service:
+          description: Service name
+          type: string
+        api:
+          type: object
+          additionalProperties: false
+          patternProperties:
+            ^(/[a-zA-Z0-9\-_\.]*)+$:
+              type: array
+              description: API path
+              items:
+                description: Method
+                enum:
+                  - get
+                  - post
+                  - put
+                  - delete
+                  - options
+                  - any
+        events:
+          type: array
+          items:
+            description: Detail-type of the event
+            type: string
+
+  dependencies:
+    type: array
+    items:
+      type: string
+
+  parameters:
+    type: object
+    additionalProperties:
+      type: string
+
+  flags:
+    type: object
+    properties:
+      environment:
+        type: boolean
+        description: Whether or not this resource supports environments
+        default: true
+      skip-tests:
+        type: boolean
+        description: If true, always return a success instead of running tests
+        default: false

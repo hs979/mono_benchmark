@@ -1,0 +1,37 @@
+{
+  "name": "presso-monolith",
+  "version": "1.0.0",
+  "description": "presso咖啡订单系统",
+  "main": "app.js",
+  "scripts": {
+    "start": "node app.js",
+    "dev": "nodemon app.js",
+    "test": "node test-workflow.js",
+    "init-db": "node scripts/init-db.js"
+  },
+  "keywords": [
+    "presso",
+    "coffee",
+    "order",
+    "monolith"
+  ],
+  "author": "AWS Samples",
+  "license": "MIT-0",
+  "dependencies": {
+    "express": "^4.18.2",
+    "cors": "^2.8.5",
+    "nanoid": "^3.3.4",
+    "axios": "^1.4.0",
+    "aws-sdk": "^2.1450.0",
+    "jsonwebtoken": "^9.0.2",
+    "bcryptjs": "^2.4.3",
+    "dotenv": "^16.0.3"
+  },
+  "devDependencies": {
+    "nodemon": "^2.0.22"
+  },
+  "engines": {
+    "node": ">=14.0.0"
+  }
+}
+

@@ -1,0 +1,15 @@
+{
+	"name": "store-image-metadata",
+	"version": "1.0.0",
+	"description": "Store extracted image info into backend database",
+	"main": "index.js",
+	"repository": "https://github.com/aws-samples/lambda-refarch-imagerecognition",
+	"author": "Angela Wang",
+	"license": "Apache-2",
+	"dependencies": {
+		"aws-appsync": "^4.1.9",
+		"graphql": "^16.6.0",
+		"graphql-tag": "^2.12.6",
+		"isomorphic-fetch": "^3.0.0"
+	}
+}
