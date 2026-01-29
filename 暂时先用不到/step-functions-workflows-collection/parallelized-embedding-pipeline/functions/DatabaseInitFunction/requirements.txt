@@ -1,5 +1,0 @@
-# AWS SDK
-boto3>=1.28.0
-
-# Standard libraries used
-# json, logging, time, os (no need to include in requirements.txt)

@@ -6,7 +6,8 @@
   "scripts": {
     "start": "node server.js",
     "dev": "nodemon server.js",
-    "check-imagemagick": "node check-imagemagick.js"
+    "check-imagemagick": "node check-imagemagick.js",
+    "init-db": "node scripts/init-db.js"
   },
   "keywords": ["image-processing", "rekognition", "thumbnail", "metadata"],
   "author": "Converted from AWS Serverless Application",

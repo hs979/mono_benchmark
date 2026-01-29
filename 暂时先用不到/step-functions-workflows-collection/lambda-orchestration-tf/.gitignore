@@ -1,2 +1,0 @@
-# ignore zip files created for lambda functions
-*.zip

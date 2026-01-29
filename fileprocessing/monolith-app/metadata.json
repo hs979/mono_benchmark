@@ -1,0 +1,30 @@
+{
+  "name": "fileProcess",
+  "type": "monolith",
+  "language": "python",
+  "structure": "flat",
+  "description": "文件处理工具 - 简单单体应用，提供Markdown转HTML和情感分析功能",
+  "entry_point": "main.py",
+  "key_modules": {
+    "routes": ["main.py"],
+    "services": ["processing.py"],
+    "database": ["database.py"]
+  },
+  "database": {
+    "type": "DynamoDB",
+    "tables": ["sentiment_results"]
+  },
+  "dependencies": {
+    "framework": "CLI",
+    "main_libraries": ["markdown", "textblob", "boto3"]
+  },
+  "features": [
+    "Markdown到HTML转换",
+    "文本情感分析",
+    "结果持久化到DynamoDB"
+  ],
+  "cli_usage": "python main.py <markdown_file>",
+  "lines_of_code": 300,
+  "complexity": "simple",
+  "notes": "最简单的示例，展示了基本的文件处理流程。适合演示简单CLI应用如何转换为Lambda函数。"
+}

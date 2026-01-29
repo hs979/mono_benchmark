@@ -1,12 +1,13 @@
 /**
  * DynamoDB 数据访问层
+ * 
+ * 注意：表创建请使用 scripts/init-db.js 或运行 npm run init-db
  */
 
 const AWS = require('aws-sdk');
 const { v4: uuidv4 } = require('uuid');
 
 // 配置 AWS SDK
-// 可以通过环境变量配置：AWS_REGION, AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY
 AWS.config.update({
     region: process.env.AWS_REGION || 'us-east-1'
 });
@@ -19,120 +20,6 @@ const TABLES = {
     ALBUMS: process.env.DYNAMODB_ALBUMS_TABLE || 'ImageRecognition-Albums',
     PHOTOS: process.env.DYNAMODB_PHOTOS_TABLE || 'ImageRecognition-Photos'
 };
-
-// ============================================================================
-// 辅助函数：创建 DynamoDB 表（如果不存在）
-// ============================================================================
-
-/**
- * 创建所有必需的 DynamoDB 表
- * 注意：这个函数在生产环境中通常不需要，因为表应该通过 CloudFormation 或 Terraform 创建
- */
-async function initializeTables() {
-    const dynamoDBClient = new AWS.DynamoDB();
-    
-    console.log('开始检查并创建 DynamoDB 表...');
-
-    // 1. 创建 Users 表
-    try {
-        await dynamoDBClient.describeTable({ TableName: TABLES.USERS }).promise();
-        console.log(`✓ Users 表已存在: ${TABLES.USERS}`);
-    } catch (error) {
-        if (error.code === 'ResourceNotFoundException') {
-            console.log(`创建 Users 表: ${TABLES.USERS}`);
-            await dynamoDBClient.createTable({
-                TableName: TABLES.USERS,
-                KeySchema: [
-                    { AttributeName: 'username', KeyType: 'HASH' }  // Partition key
-                ],
-                AttributeDefinitions: [
-                    { AttributeName: 'username', AttributeType: 'S' }
-                ],
-                BillingMode: 'PAY_PER_REQUEST'  // 按需付费模式
-            }).promise();
-            
-            // 等待表创建完成
-            await dynamoDBClient.waitFor('tableExists', { TableName: TABLES.USERS }).promise();
-            console.log(`✓ Users 表创建成功: ${TABLES.USERS}`);
-        } else {
-            throw error;
-        }
-    }
-
-    // 2. 创建 Albums 表
-    try {
-        await dynamoDBClient.describeTable({ TableName: TABLES.ALBUMS }).promise();
-        console.log(`✓ Albums 表已存在: ${TABLES.ALBUMS}`);
-    } catch (error) {
-        if (error.code === 'ResourceNotFoundException') {
-            console.log(`创建 Albums 表: ${TABLES.ALBUMS}`);
-            await dynamoDBClient.createTable({
-                TableName: TABLES.ALBUMS,
-                KeySchema: [
-                    { AttributeName: 'id', KeyType: 'HASH' }  // Partition key
-                ],
-                AttributeDefinitions: [
-                    { AttributeName: 'id', AttributeType: 'S' },
-                    { AttributeName: 'owner', AttributeType: 'S' }
-                ],
-                GlobalSecondaryIndexes: [
-                    {
-                        IndexName: 'OwnerIndex',
-                        KeySchema: [
-                            { AttributeName: 'owner', KeyType: 'HASH' }
-                        ],
-                        Projection: { ProjectionType: 'ALL' }
-                    }
-                ],
-                BillingMode: 'PAY_PER_REQUEST'
-            }).promise();
-            
-            await dynamoDBClient.waitFor('tableExists', { TableName: TABLES.ALBUMS }).promise();
-            console.log(`✓ Albums 表创建成功: ${TABLES.ALBUMS}`);
-        } else {
-            throw error;
-        }
-    }
-
-    // 3. 创建 Photos 表
-    try {
-        await dynamoDBClient.describeTable({ TableName: TABLES.PHOTOS }).promise();
-        console.log(`✓ Photos 表已存在: ${TABLES.PHOTOS}`);
-    } catch (error) {
-        if (error.code === 'ResourceNotFoundException') {
-            console.log(`创建 Photos 表: ${TABLES.PHOTOS}`);
-            await dynamoDBClient.createTable({
-                TableName: TABLES.PHOTOS,
-                KeySchema: [
-                    { AttributeName: 'id', KeyType: 'HASH' }  // Partition key
-                ],
-                AttributeDefinitions: [
-                    { AttributeName: 'id', AttributeType: 'S' },
-                    { AttributeName: 'albumId', AttributeType: 'S' },
-                    { AttributeName: 'uploadTime', AttributeType: 'S' }
-                ],
-                GlobalSecondaryIndexes: [
-                    {
-                        IndexName: 'AlbumIndex',
-                        KeySchema: [
-                            { AttributeName: 'albumId', KeyType: 'HASH' },
-                            { AttributeName: 'uploadTime', KeyType: 'RANGE' }
-                        ],
-                        Projection: { ProjectionType: 'ALL' }
-                    }
-                ],
-                BillingMode: 'PAY_PER_REQUEST'
-            }).promise();
-            
-            await dynamoDBClient.waitFor('tableExists', { TableName: TABLES.PHOTOS }).promise();
-            console.log(`✓ Photos 表创建成功: ${TABLES.PHOTOS}`);
-        } else {
-            throw error;
-        }
-    }
-
-    console.log('DynamoDB 表初始化完成');
-}
 
 // ============================================================================
 // 用户相关函数
@@ -606,9 +493,6 @@ function close() {
 // ============================================================================
 
 module.exports = {
-    // 初始化
-    initializeTables,
-    
     // User functions
     createUser,
     findUserByUsername,

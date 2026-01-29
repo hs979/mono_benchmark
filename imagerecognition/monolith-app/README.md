@@ -79,20 +79,39 @@ cd client
 npm install
 ```
 
-### 4. 构建前端
+### 4. 初始化 DynamoDB 表
 
-```bash
-# 在client目录下
-npm run build
-```
-
-构建完成后，前端文件会输出到 `client/build/` 目录。
-
-### 5. 启动应用
+在首次启动前，需要创建所需的 DynamoDB 表：
 
 ```bash
 # 返回项目根目录
 cd ..
+
+# 初始化数据库表
+npm run init-db
+```
+
+此命令会创建以下表：
+- `ImageRecognition-Users` - 用户表
+- `ImageRecognition-Albums` - 相册表（含 OwnerIndex）
+- `ImageRecognition-Photos` - 照片表（含 AlbumIndex）
+
+### 5. 构建前端
+
+```bash
+# 在client目录下（如果还在client目录）
+npm run build
+
+# 如果在根目录
+cd client && npm run build && cd ..
+```
+
+构建完成后，前端文件会输出到 `client/build/` 目录。
+
+### 6. 启动应用
+
+```bash
+# 在项目根目录
 
 # 开发模式（自动重启）
 npm run dev
@@ -101,16 +120,9 @@ npm run dev
 npm start
 ```
 
-应用将在 http://localhost:3000 启动。
+应用将在 http://localhost:3000 启动。打开浏览器访问即可使用。
 
-**首次启动时**，应用会自动创建所需的 DynamoDB 表：
-- `ImageRecognition-Users` - 用户表
-- `ImageRecognition-Albums` - 相册表
-- `ImageRecognition-Photos` - 照片表
-
-启动成功后，打开浏览器访问 http://localhost:3000 即可使用。
-
-### 6. 使用应用
+### 7. 使用应用
 
 1. **注册账号**: 首次访问时，点击"注册"标签，填写用户名、邮箱和密码
 2. **登录**: 使用注册的账号登录
@@ -359,8 +371,10 @@ Authorization: Bearer <token>
 monolith-app/
 ├── server.js                    # Express服务器主文件
 ├── package.json                 # 后端依赖配置
-├── init-db.js                  # 数据库初始化脚本
 ├── README.md                   # 本文档
+│
+├── scripts/
+│   └── init-db.js              # DynamoDB 表初始化脚本
 │
 ├── client/                     # 前端React应用
 │   ├── package.json            # 前端依赖配置

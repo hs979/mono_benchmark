@@ -1,8 +1,3 @@
-/**
- * Todo应用主组件
- * 
- */
-
 import React, { useState, useEffect } from 'react';
 import { Container, Jumbotron, Row, Col, Alert, Button, Form, FormGroup, Label, Input } from 'reactstrap';
 import axios from 'axios';
@@ -21,14 +16,12 @@ function App() {
   const [token, setToken] = useState('');
   const [username, setUsername] = useState('');
   const [toDos, setToDos] = useState([]);
-  const [isLogin, setIsLogin] = useState(true); // true为登录模式，false为注册模式
+  const [isLogin, setIsLogin] = useState(true);
 
-  // 表单输入状态
   const [formUsername, setFormUsername] = useState('');
   const [formPassword, setFormPassword] = useState('');
   const [formEmail, setFormEmail] = useState('');
 
-  // 从localStorage恢复登录状态
   useEffect(() => {
     const savedToken = localStorage.getItem('token');
     const savedUsername = localStorage.getItem('username');
@@ -38,24 +31,21 @@ function App() {
     }
   }, []);
 
-  // 当token变化时，获取待办事项列表
   useEffect(() => {
     if (token && username) {
       getAllTodos();
     }
   }, [token, username]);
 
-  // 配置axios拦截器，处理认证错误
   axios.interceptors.response.use(
     response => {
       return response;
     },
     error => {
       if (error.response && error.response.status === 401) {
-        // 认证失败，清除登录状态
         handleLogout();
         updateAlert({
-          alert: '登录已过期，请重新登录',
+          alert: 'Login expired, please login again',
           style: 'warning',
           visible: true,
           dismissable: true
@@ -76,15 +66,12 @@ function App() {
     setAlertDismissable(dismissable ? dismissable : null);
   }
 
-  /**
-   * 用户登录
-   */
   const handleLogin = async (event) => {
     event.preventDefault();
 
     if (!formUsername || !formPassword) {
       updateAlert({
-        alert: '请输入用户名和密码',
+        alert: 'Please enter username and password',
         style: 'warning',
         visible: true,
         dismissable: true
@@ -101,27 +88,25 @@ function App() {
       if (result.status === 200) {
         const { token, username } = result.data;
         
-        // 保存到state和localStorage
         setToken(token);
         setUsername(username);
         localStorage.setItem('token', token);
         localStorage.setItem('username', username);
 
-        // 清空表单
         setFormUsername('');
         setFormPassword('');
 
         updateAlert({
-          alert: '登录成功！',
+          alert: 'Login successful!',
           style: 'success',
           visible: true,
           dismissable: true
         });
       }
     } catch (error) {
-      console.error('登录失败:', error);
+      console.error('Login failed:', error);
       updateAlert({
-        alert: error.response?.data?.message || '登录失败，请检查用户名和密码',
+        alert: error.response?.data?.message || 'Login failed, please check username and password',
         style: 'danger',
         visible: true,
         dismissable: true
@@ -129,15 +114,12 @@ function App() {
     }
   };
 
-  /**
-   * 用户注册
-   */
   const handleRegister = async (event) => {
     event.preventDefault();
 
     if (!formUsername || !formPassword) {
       updateAlert({
-        alert: '请输入用户名和密码',
+        alert: 'Please enter username and password',
         style: 'warning',
         visible: true,
         dismissable: true
@@ -147,7 +129,7 @@ function App() {
 
     if (formPassword.length < 6) {
       updateAlert({
-        alert: '密码长度至少为6个字符',
+        alert: 'Password must be at least 6 characters long',
         style: 'warning',
         visible: true,
         dismissable: true
@@ -165,28 +147,26 @@ function App() {
       if (result.status === 201) {
         const { token, username } = result.data;
         
-        // 保存到state和localStorage
         setToken(token);
         setUsername(username);
         localStorage.setItem('token', token);
         localStorage.setItem('username', username);
 
-        // 清空表单
         setFormUsername('');
         setFormPassword('');
         setFormEmail('');
 
         updateAlert({
-          alert: '注册成功！',
+          alert: 'Registration successful!',
           style: 'success',
           visible: true,
           dismissable: true
         });
       }
     } catch (error) {
-      console.error('注册失败:', error);
+      console.error('Registration failed:', error);
       updateAlert({
-        alert: error.response?.data?.message || '注册失败，请稍后重试',
+        alert: error.response?.data?.message || 'Registration failed, please try again later',
         style: 'danger',
         visible: true,
         dismissable: true
@@ -194,9 +174,6 @@ function App() {
     }
   };
 
-  /**
-   * 用户登出
-   */
   const handleLogout = () => {
     setToken('');
     setUsername('');
@@ -205,9 +182,6 @@ function App() {
     localStorage.removeItem('username');
   };
 
-  /**
-   * 获取所有待办事项
-   */
   const getAllTodos = async () => {
     try {
       const result = await axios({
@@ -221,13 +195,10 @@ function App() {
         setToDos(result.data.Items || []);
       }
     } catch (error) {
-      console.error('获取待办事项失败:', error);
+      console.error('Failed to fetch todo items:', error);
     }
   };
 
-  /**
-   * 添加待办事项
-   */
   const addToDo = async (event) => {
     const newToDoInput = document.getElementById('newToDo');
     const item = newToDoInput.value;
